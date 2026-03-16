@@ -30,6 +30,8 @@ func InitRouter() *gin.Engine {
 
 	SetupAuthRoutes(api, container)
 	SetupUserRoutes(api, container)
+	SetupActivityRoutes(api, container)
+	SetupTeacherRoutes(api, container)
 
 	return router
 }
