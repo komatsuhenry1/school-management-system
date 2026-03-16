@@ -2,6 +2,7 @@ package config
 
 import (
 	userModel "schoolmanagement/internal/user/model"
+	activityModel "schoolmanagement/internal/activity/model"
 	"fmt"
 	"os"
 
@@ -43,7 +44,12 @@ func ConnectDB() error {
 	if err != nil {
 		return fmt.Errorf("erro ao conectar com o banco de dados: %w", err)
 	}
-	if err := db.AutoMigrate(&userModel.User{}); err != nil {
+	if err := db.AutoMigrate(
+		&userModel.User{},
+		&activityModel.Activity{},
+		&activityModel.Exercise{},
+		&activityModel.Alternative{},
+	); err != nil {
 		return fmt.Errorf("erro ao migrar banco de dados: %w", err)
 	}
 	DB = db

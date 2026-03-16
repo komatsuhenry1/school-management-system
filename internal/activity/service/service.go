@@ -23,10 +23,34 @@ func NewActivityService(activityRepository repository.ActivityRepository) Activi
 }
 
 func (s *activityService) CreateActivity(req *dto.ActivityRequestDTO) (*model.Activity, error) {
-	activity := &model.Activity{
-		Name:        req.Name,
-		Description: req.Description,
+	exercises := make([]model.Exercise, 0, len(req.Exercises))
+	
+	for _, e := range req.Exercises {
+		alts := make([]model.Alternative, 0, len(e.Alternatives))
+		for _, alt := range e.Alternatives {
+			alts = append(alts, model.Alternative{
+				Letter: alt.Letter,
+				Value:  alt.Value,
+			})
+		}
+
+		exercises = append(exercises, model.Exercise{
+			ExerciseNumber:  e.ExerciseNumber,
+			ExerciseSubject: e.ExerciseSubject,
+			Question:        e.Question,
+			Answer:          e.Answer,
+			ExerciseValue:   e.ExerciseValue,
+			Alternatives:    alts,
+		})
 	}
+
+	activity := &model.Activity{
+		Title:         req.Title,
+		Description:   req.Description,
+		ActivityValue: req.ActivityValue,
+		Exercises:     exercises,
+	}
+
 	if err := s.activityRepository.CreateActivity(activity); err != nil {
 		return nil, err
 	}

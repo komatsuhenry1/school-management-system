@@ -28,7 +28,7 @@ func (r *activityRepository) CreateActivity(activity *model.Activity) error {
 
 func (r *activityRepository) GetAllActivities() ([]model.Activity, error) {
 	var activities []model.Activity
-	if err := r.db.Find(&activities).Error; err != nil {
+	if err := r.db.Preload("Exercises.Alternatives").Find(&activities).Error; err != nil {
 		return nil, err
 	}
 	return activities, nil
@@ -36,7 +36,7 @@ func (r *activityRepository) GetAllActivities() ([]model.Activity, error) {
 
 func (r *activityRepository) GetActivityByID(id string) (*model.Activity, error) {
 	var activity model.Activity
-	if err := r.db.First(&activity, "id = ?", id).Error; err != nil {
+	if err := r.db.Preload("Exercises.Alternatives").First(&activity, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &activity, nil
