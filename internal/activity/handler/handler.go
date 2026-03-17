@@ -144,7 +144,9 @@ func (h *ActivityHandler) ToggleActivityStatus(c *gin.Context) {
 }
 
 func (h *ActivityHandler) GetActiveActivities(c *gin.Context) {
-	activities, err := h.service.GetActiveActivities()
+	userId := utils.GetUserId(c)
+
+	activities, err := h.service.GetActiveActivities(userId)
 	if err != nil {
 		utils.SendErrorResponse(c, err.Error(), http.StatusInternalServerError)
 		return

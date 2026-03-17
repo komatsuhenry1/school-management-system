@@ -17,7 +17,7 @@ type ActivityService interface {
 	DeleteActivity(id string) error
 	SubmitActivity(req *dto.SubmissionRequestDTO, activityID string, userID string) (*model.ActivitySubmission, error)
 	GetActivityDashboard(activityID string) (*dto.ActivityDashboardDTO, error)
-	GetActiveActivities() ([]dto.ActiveActivityResponseDTO, error)
+	GetActiveActivities(userID string) ([]dto.ActiveActivityResponseDTO, error)
 	GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error)
 	GetStudentDashboard(userID string) (*dto.StudentDashboardDTO, error)
 }
@@ -101,7 +101,7 @@ func (s *activityService) SubmitActivity(req *dto.SubmissionRequestDTO, activity
 		return nil, err
 	}
 
-	// 2. Map correct answers for O(1) lookup
+	// 2. Map correct answers for O(1) lookup-
 	correctAnswers := make(map[string]model.Exercise)
 	for _, ex := range activity.Exercises {
 		correctAnswers[ex.ID] = ex
@@ -278,10 +278,21 @@ func (s *activityService) GetActivityDashboard(activityID string) (*dto.Activity
 	return dashboardDTO, nil
 }
 
-func (s *activityService) GetActiveActivities() ([]dto.ActiveActivityResponseDTO, error) {
+func (s *activityService) GetActiveActivities(userID string) ([]dto.ActiveActivityResponseDTO, error) {
 	activities, err := s.activityRepository.GetActiveActivities()
 	if err != nil {
 		return nil, err
+	}
+
+	// Fetch user's submissions to check which ones are submitted
+	userSubmissions := make(map[string]float32)
+	if userID != "" {
+		submissions, err := s.activityRepository.GetSubmissionsByUserID(userID)
+		if err == nil {
+			for _, sub := range submissions {
+				userSubmissions[sub.ActivityID] = sub.Score
+			}
+		}
 	}
 
 	var response []dto.ActiveActivityResponseDTO
@@ -307,12 +318,23 @@ func (s *activityService) GetActiveActivities() ([]dto.ActiveActivityResponseDTO
 			})
 		}
 
+		isSubmitted := false
+		var scorePtr *float32
+
+		if score, exists := userSubmissions[act.ID]; exists {
+			isSubmitted = true
+			scoreCopy := score
+			scorePtr = &scoreCopy
+		}
+
 		response = append(response, dto.ActiveActivityResponseDTO{
 			ID:            act.ID,
 			Title:         act.Title,
 			Description:   act.Description,
 			ActivityValue: act.ActivityValue,
 			Status:        act.Status,
+			IsSubmitted:   isSubmitted,
+			Score:         scorePtr,
 			Exercises:     exercises,
 			CreatedAt:     act.CreatedAt,
 		})

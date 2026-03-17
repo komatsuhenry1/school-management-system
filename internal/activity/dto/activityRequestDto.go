@@ -39,6 +39,8 @@ type ActiveActivityResponseDTO struct {
 	ActivityValue float32              `json:"activity_value"`
 	Status        string               `json:"status"`
 	CreatedAt     time.Time            `json:"created_at"`
+	IsSubmitted   bool                 `json:"is_submitted"`
+	Score         *float32             `json:"score,omitempty"`
 	Exercises     []StudentExerciseDTO `json:"exercises"`
 }
 
