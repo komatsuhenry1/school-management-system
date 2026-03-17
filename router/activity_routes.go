@@ -11,6 +11,7 @@ func SetupActivityRoutes(r *gin.RouterGroup, container *di.Container) {
 	{
 		// Somente professor cria, atualiza e deleta
 		activity.POST("/", middleware.AuthRoles("TEACHER"), container.ActivityHandler.CreateActivity)
+		activity.PUT("/:id", middleware.AuthRoles("TEACHER"), container.ActivityHandler.UpdateActivityFull)
 		activity.PATCH("/:id", middleware.AuthRoles("TEACHER"), container.ActivityHandler.UpdateActivity)
 		activity.PATCH("/:id/exercise/:exerciseID/alternative/:alternativeID", middleware.AuthRoles("TEACHER"), container.ActivityHandler.UpdateAlternative)
 		activity.DELETE("/:id", middleware.AuthRoles("TEACHER"), container.ActivityHandler.DeleteActivity)
@@ -22,7 +23,7 @@ func SetupActivityRoutes(r *gin.RouterGroup, container *di.Container) {
 		// Ambos podem listar e ver atividades específicas (Teacher vê tudo, Activity/active aluno vê)
 		activity.GET("/", middleware.AuthRoles("TEACHER", "USER"), container.ActivityHandler.GetAllActivities)
 		activity.GET("/active", middleware.AuthRoles("TEACHER", "USER"), container.ActivityHandler.GetActiveActivities)
-		activity.GET("/:id", middleware.AuthRoles("TEACHER", "USER"), container.ActivityHandler.GetActivityByID)
+		activity.GET("/:id", middleware.AuthRoles("TEACHER", "USER"), 	container.ActivityHandler.GetActivityByID)
 		activity.GET("/:id/questions", middleware.AuthRoles("TEACHER", "USER"), container.ActivityHandler.GetActivityQuestions)
 		
 		// Dashboard apenas professores

@@ -18,6 +18,7 @@ type ActivityRepository interface {
 	GetSubmissionsByUserID(userID string) ([]model.ActivitySubmission, error)
 	HasUserSubmittedActivity(userID string, activityID string) (bool, error)
 	UpdateAlternative(alternativeID string, updates map[string]interface{}) error
+	UpdateActivityFull(activity *model.Activity) error
 }
 
 type activityRepository struct {
@@ -107,4 +108,31 @@ func (r *activityRepository) HasUserSubmittedActivity(userID string, activityID 
 
 func (r *activityRepository) UpdateAlternative(alternativeID string, updates map[string]interface{}) error {
 	return r.db.Model(&model.Alternative{}).Where("id = ?", alternativeID).Updates(updates).Error
+}
+
+func (r *activityRepository) UpdateActivityFull(activity *model.Activity) error {
+	// Use GORM's Full Save Associations to replace everything
+	// Alternatively, we delete existing exercises and recreate them
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// 1. Delete existing Exercises (and cascade Alternatives if relying on DB constraints, 
+		// otherwise GORM Unscoped to forcefully clean up before insert)
+		if err := tx.Where("activity_id = ?", activity.ID).Delete(&model.Exercise{}).Error; err != nil {
+			return err
+		}
+
+		// 2. Update the parent Activity record
+		if err := tx.Model(activity).Select("Title", "Description", "ActivityValue").Updates(activity).Error; err != nil {
+			return err
+		}
+
+		// 3. Insert the new Exercises correctly associated
+		for i := range activity.Exercises {
+			activity.Exercises[i].ActivityID = activity.ID
+			if err := tx.Create(&activity.Exercises[i]).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }

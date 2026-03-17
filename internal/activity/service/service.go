@@ -21,6 +21,7 @@ type ActivityService interface {
 	GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error)
 	GetStudentDashboard(userID string) (*dto.StudentDashboardDTO, error)
 	UpdateAlternative(alternativeID string, updates map[string]interface{}) error
+	UpdateActivityFull(id string, req *dto.ActivityRequestDTO) (*model.Activity, error)
 }
 
 type activityService struct {
@@ -395,6 +396,7 @@ func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashbo
 			TotalActivitiesCompleted: 0,
 			AverageScore:             0,
 			Subjects:                 []dto.SubjectAccuracyDTO{},
+			Activities:               []dto.ActivityAccuracyDTO{},
 		}, nil
 	}
 
@@ -415,26 +417,53 @@ func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashbo
 
 	averageScore := totalScore / float32(totalActivitiesCompleted)
 
-	// Fetch all necessary exercises to get subjects
+	// Fetch all necessary exercises to get subjects and map activities for Titles
 	exercisesMap := make(map[string]model.Exercise)
+	activitiesMap := make(map[string]model.Activity)
 	for actID := range activityIDs {
 		act, err := s.activityRepository.GetActivityByID(actID)
 		if err == nil {
+			activitiesMap[act.ID] = *act
 			for _, ex := range act.Exercises {
 				exercisesMap[ex.ID] = ex
 			}
 		}
 	}
 
-	// Now aggregate subject accuracy
+	// Now aggregate subject and activity accuracy
+	var activitiesAccuracy []dto.ActivityAccuracyDTO
+	
 	for _, sub := range submissions {
+		activityTotalAnswers := 0
+		activityCorrectAnswers := 0
+
 		for _, ans := range sub.Answers {
+			activityTotalAnswers++
+			if ans.IsCorrect {
+				activityCorrectAnswers++
+			}
+
 			if ex, exists := exercisesMap[ans.ExerciseID]; exists {
 				subjectTotalAnswers[ex.ExerciseSubject]++
 				if ans.IsCorrect {
 					subjectCorrectAnswers[ex.ExerciseSubject]++
 				}
 			}
+		}
+
+		if activityTotalAnswers > 0 {
+			accuracy := (float32(activityCorrectAnswers) / float32(activityTotalAnswers)) * 100
+			
+			title := "Atividade Desconhecida"
+			if act, ok := activitiesMap[sub.ActivityID]; ok {
+				title = act.Title
+			}
+
+			activitiesAccuracy = append(activitiesAccuracy, dto.ActivityAccuracyDTO{
+				ActivityID: sub.ActivityID,
+				Title:      title,
+				Accuracy:   accuracy,
+			})
 		}
 	}
 
@@ -455,6 +484,7 @@ func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashbo
 		TotalActivitiesCompleted: totalActivitiesCompleted,
 		AverageScore:             averageScore,
 		Subjects:                 subjectsAccuracy,
+		Activities:               activitiesAccuracy,
 	}
 
 	return dashboard, nil
@@ -465,4 +495,41 @@ func (s *activityService) UpdateAlternative(alternativeID string, updates map[st
 	// actually belongs to the provided activity ID in the route, but in a simple implementation
 	// we just update by the unique alternative ID.
 	return s.activityRepository.UpdateAlternative(alternativeID, updates)
+}
+
+func (s *activityService) UpdateActivityFull(id string, req *dto.ActivityRequestDTO) (*model.Activity, error) {
+	exercises := make([]model.Exercise, 0, len(req.Exercises))
+	
+	for _, e := range req.Exercises {
+		alts := make([]model.Alternative, 0, len(e.Alternatives))
+		for _, alt := range e.Alternatives {
+			alts = append(alts, model.Alternative{
+				Letter: alt.Letter,
+				Value:  alt.Value,
+			})
+		}
+
+		exercises = append(exercises, model.Exercise{
+			ActivityID:      id,
+			ExerciseNumber:  e.ExerciseNumber,
+			ExerciseSubject: e.ExerciseSubject,
+			Question:        e.Question,
+			Answer:          e.Answer,
+			ExerciseValue:   e.ExerciseValue,
+			Alternatives:    alts,
+		})
+	}
+
+	activity := &model.Activity{
+		ID:            id,
+		Title:         req.Title,
+		Description:   req.Description,
+		ActivityValue: req.ActivityValue,
+		Exercises:     exercises,
+	}
+
+	if err := s.activityRepository.UpdateActivityFull(activity); err != nil {
+		return nil, err
+	}
+	return activity, nil
 }

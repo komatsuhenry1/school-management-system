@@ -196,3 +196,21 @@ func (h *ActivityHandler) UpdateAlternative(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Alternativa atualizada com sucesso.", nil)
 }
+
+func (h *ActivityHandler) UpdateActivityFull(c *gin.Context) {
+	id := c.Param("id")
+
+	var req dto.ActivityRequestDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	activity, err := h.service.UpdateActivityFull(id, &req)
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Atividade atualizada com sucesso.", activity)
+}
