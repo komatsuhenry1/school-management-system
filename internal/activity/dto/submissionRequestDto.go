@@ -6,7 +6,5 @@ type ExerciseSubmissionDTO struct {
 }
 
 type SubmissionRequestDTO struct {
-	ActivityID string                  `json:"activity_id" binding:"required"`
-	UserID     string                  `json:"user_id" binding:"required"`
 	Answers    []ExerciseSubmissionDTO `json:"answers" binding:"required"`
 }

@@ -35,13 +35,16 @@ func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 }
 
 func (h *ActivityHandler) SubmitActivity(c *gin.Context) {
+	activityId := c.Param("id")
+	userId := utils.GetUserId(c)
+
 	var req dto.SubmissionRequestDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	activity, err := h.service.SubmitActivity(&req)
+	activity, err := h.service.SubmitActivity(&req, activityId, userId)
 	if err != nil {
 		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
 		return

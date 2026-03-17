@@ -14,7 +14,7 @@ type ActivityService interface {
 	GetActivityByID(id string) (*model.Activity, error)
 	UpdateActivity(id string, updates map[string]interface{}) (*model.Activity, error)
 	DeleteActivity(id string) error
-	SubmitActivity(req *dto.SubmissionRequestDTO) (*model.ActivitySubmission, error)
+	SubmitActivity(req *dto.SubmissionRequestDTO, activityID string, userID string) (*model.ActivitySubmission, error)
 	GetActivityDashboard(activityID string) (*dto.ActivityDashboardDTO, error)
 	GetActiveActivities() ([]dto.ActiveActivityResponseDTO, error)
 	GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error)
@@ -83,9 +83,9 @@ func (s *activityService) DeleteActivity(id string) error {
 	return s.activityRepository.DeleteActivity(id)
 }
 
-func (s *activityService) SubmitActivity(req *dto.SubmissionRequestDTO) (*model.ActivitySubmission, error) {
+func (s *activityService) SubmitActivity(req *dto.SubmissionRequestDTO, activityID string, userID string) (*model.ActivitySubmission, error) {
 	// 1. Fetch the activity to know the correct answers
-	activity, err := s.activityRepository.GetActivityByID(req.ActivityID)
+	activity, err := s.activityRepository.GetActivityByID(activityID)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *activityService) SubmitActivity(req *dto.SubmissionRequestDTO) (*model.
 	// 4. Create the final submission payload
 	submission := &model.ActivitySubmission{
 		ActivityID: activity.ID,
-		UserID:     req.UserID,
+		UserID:     userID,
 		Score:      totalScore,
 		Status:     "COMPLETED", // Adjust as necessary if manual review is needed
 		Answers:    exerciseSubmissions,

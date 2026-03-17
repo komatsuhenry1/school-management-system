@@ -15,7 +15,7 @@ func SetupActivityRoutes(r *gin.RouterGroup, container *di.Container) {
 		activity.DELETE("/:id", middleware.AuthRoles("TEACHER"), container.ActivityHandler.DeleteActivity)
 		
 		// Somente aluno responde
-		activity.POST("/submit", middleware.AuthRoles("USER"), container.ActivityHandler.SubmitActivity)
+		activity.POST("/submit/:id", middleware.AuthRoles("USER"), container.ActivityHandler.SubmitActivity)
 		
 		// Ambos podem listar e ver atividades específicas (Teacher vê tudo, Activity/active aluno vê)
 		activity.GET("/", middleware.AuthRoles("TEACHER", "USER"), container.ActivityHandler.GetAllActivities)

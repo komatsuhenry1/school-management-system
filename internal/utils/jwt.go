@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -37,5 +38,17 @@ func GenerateRefreshToken() (string, error) {
 func HashToken(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(hash[:])
+}
+
+func GetUserId(c *gin.Context) string {
+	claims, exists := c.Get("claims")
+	if !exists {
+		return ""
+	}
+	userId, ok := claims.(jwt.MapClaims)["sub"].(string)
+	if !ok {
+		return ""
+	}
+	return userId
 }
 
