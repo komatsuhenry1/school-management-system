@@ -12,6 +12,7 @@ func SetupActivityRoutes(r *gin.RouterGroup, container *di.Container) {
 		// Somente professor cria, atualiza e deleta
 		activity.POST("/", middleware.AuthRoles("TEACHER"), container.ActivityHandler.CreateActivity)
 		activity.PATCH("/:id", middleware.AuthRoles("TEACHER"), container.ActivityHandler.UpdateActivity)
+		activity.PATCH("/:id/exercise/:exerciseID/alternative/:alternativeID", middleware.AuthRoles("TEACHER"), container.ActivityHandler.UpdateAlternative)
 		activity.DELETE("/:id", middleware.AuthRoles("TEACHER"), container.ActivityHandler.DeleteActivity)
 		
 		// Somente aluno responde

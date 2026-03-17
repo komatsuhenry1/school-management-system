@@ -17,6 +17,7 @@ type ActivityRepository interface {
 	GetActiveActivities() ([]model.Activity, error)
 	GetSubmissionsByUserID(userID string) ([]model.ActivitySubmission, error)
 	HasUserSubmittedActivity(userID string, activityID string) (bool, error)
+	UpdateAlternative(alternativeID string, updates map[string]interface{}) error
 }
 
 type activityRepository struct {
@@ -102,4 +103,8 @@ func (r *activityRepository) HasUserSubmittedActivity(userID string, activityID 
 	}
 
 	return count > 0, nil
+}
+
+func (r *activityRepository) UpdateAlternative(alternativeID string, updates map[string]interface{}) error {
+	return r.db.Model(&model.Alternative{}).Where("id = ?", alternativeID).Updates(updates).Error
 }

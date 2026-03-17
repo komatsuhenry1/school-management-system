@@ -178,3 +178,21 @@ func (h *ActivityHandler) GetStudentDashboard(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Dashboard do aluno gerado com sucesso.", dashboardData)
 }
+
+func (h *ActivityHandler) UpdateAlternative(c *gin.Context) {
+	// Pega o ID da alternativa que vem na rota
+	alternativeID := c.Param("alternativeID")
+
+	var updates map[string]interface{}
+	if err := c.ShouldBindJSON(&updates); err != nil {
+		utils.SendErrorResponse(c, "JSON inválido", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.UpdateAlternative(alternativeID, updates); err != nil {
+		utils.SendErrorResponse(c, "Erro ao atualizar alternativa: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Alternativa atualizada com sucesso.", nil)
+}
