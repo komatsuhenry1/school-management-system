@@ -9,6 +9,7 @@ type Activity struct {
 	Title         string     `json:"title"`
 	Description   string     `json:"description"`
 	ActivityValue float32    `json:"activity_value"`
+	Subject       string     `json:"subject"`
 	Status        string     `json:"status"` // ACTIVE, INACTIVE
 	Exercises     []Exercise `gorm:"foreignKey:ActivityID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"exercises"`
 	CreatedAt     time.Time  `json:"created_at"`

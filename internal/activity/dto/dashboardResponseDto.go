@@ -31,8 +31,7 @@ type SubjectAccuracyDTO struct {
 }
 
 type ActivityAccuracyDTO struct {
-	ActivityID string  `json:"activity_id"`
-	Title      string  `json:"title"`
+	Subject    string  `json:"subject"`
 	Accuracy   float32 `json:"accuracy"`
 }
 
@@ -41,4 +40,10 @@ type StudentDashboardDTO struct {
 	AverageScore             float32               `json:"average_score"`
 	Subjects                 []SubjectAccuracyDTO  `json:"subjects"`
 	Activities               []ActivityAccuracyDTO `json:"activities"`
+}
+
+type StudentRankingDTO struct {
+	Position int     `json:"position"`
+	Name     string  `json:"name"`
+	Score    float32 `json:"score"`
 }

@@ -19,6 +19,7 @@ type ExerciseDTO struct {
 type ActivityRequestDTO struct {
 	Title         string        `json:"title" binding:"required"`
 	Description   string        `json:"description"`
+	Subject       string        `json:"subject" binding:"required"`
 	ActivityValue float32       `json:"activity_value"`
 	Exercises     []ExerciseDTO `json:"exercises"`
 }

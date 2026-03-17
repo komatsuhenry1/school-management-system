@@ -214,3 +214,13 @@ func (h *ActivityHandler) UpdateActivityFull(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Atividade atualizada com sucesso.", activity)
 }
+
+func (h *ActivityHandler) GetClassRanking(c *gin.Context) {
+	ranking, err := h.service.GetClassRanking()
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Ranking da sala retornado com sucesso.", ranking)
+}

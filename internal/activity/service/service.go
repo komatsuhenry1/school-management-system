@@ -7,6 +7,7 @@ import (
 	"schoolmanagement/internal/activity/repository"
 	userRepo "schoolmanagement/internal/user/repository"
 	"sort"
+	"fmt"
 )
 
 type ActivityService interface {
@@ -20,6 +21,7 @@ type ActivityService interface {
 	GetActiveActivities(userID string) ([]dto.ActiveActivityResponseDTO, error)
 	GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error)
 	GetStudentDashboard(userID string) (*dto.StudentDashboardDTO, error)
+	GetClassRanking() ([]dto.StudentRankingDTO, error)
 	UpdateAlternative(alternativeID string, updates map[string]interface{}) error
 	UpdateActivityFull(id string, req *dto.ActivityRequestDTO) (*model.Activity, error)
 }
@@ -61,6 +63,7 @@ func (s *activityService) CreateActivity(req *dto.ActivityRequestDTO) (*model.Ac
 	activity := &model.Activity{
 		Title:         req.Title,
 		Description:   req.Description,
+		Subject:       req.Subject,
 		ActivityValue: req.ActivityValue,
 		Exercises:     exercises,
 	}
@@ -238,6 +241,11 @@ func (s *activityService) GetActivityDashboard(activityID string) (*dto.Activity
 		}
 	}
 
+	fmt.Println("========")
+	fmt.Println("========")
+	fmt.Println(hardestQuestions)
+	fmt.Println("========")
+
 	// Sort hardest questions descending by ErrorPercentage
 	sort.Slice(hardestQuestions, func(i, j int) bool {
 		return hardestQuestions[i].ErrorPercentage > hardestQuestions[j].ErrorPercentage
@@ -406,6 +414,10 @@ func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashbo
 	subjectTotalAnswers := make(map[string]int)
 	subjectCorrectAnswers := make(map[string]int)
 
+	// Track correct answers vs total answers per activity subject
+	activitySubTotalAnswers := make(map[string]int)
+	activitySubCorrectAnswers := make(map[string]int)
+
 	// Since we need the subject, we have to fetch the exercises related to the answers.
 	// Instead of querying exercise by exercise, we will collect all unique Activity IDs
 	// from the submissions, fetch those activities, and build an Exercise map.
@@ -430,40 +442,33 @@ func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashbo
 		}
 	}
 
-	// Now aggregate subject and activity accuracy
-	var activitiesAccuracy []dto.ActivityAccuracyDTO
-	
+	// We will use the Subject field directly from the Activity for `activities` accuracy
+	activitySubjects := make(map[string]string)
+	for actID, act := range activitiesMap {
+		if act.Subject != "" {
+			activitySubjects[actID] = act.Subject
+		} else {
+			activitySubjects[actID] = "Geral"
+		}
+	}
+
 	for _, sub := range submissions {
-		activityTotalAnswers := 0
-		activityCorrectAnswers := 0
+		actSubject := activitySubjects[sub.ActivityID]
 
 		for _, ans := range sub.Answers {
-			activityTotalAnswers++
+			// 1. For activities array (matéria da atividade)
+			activitySubTotalAnswers[actSubject]++
 			if ans.IsCorrect {
-				activityCorrectAnswers++
+				activitySubCorrectAnswers[actSubject]++
 			}
 
+			// 2. For subjects array (matéria do exercício individual)
 			if ex, exists := exercisesMap[ans.ExerciseID]; exists {
 				subjectTotalAnswers[ex.ExerciseSubject]++
 				if ans.IsCorrect {
 					subjectCorrectAnswers[ex.ExerciseSubject]++
 				}
 			}
-		}
-
-		if activityTotalAnswers > 0 {
-			accuracy := (float32(activityCorrectAnswers) / float32(activityTotalAnswers)) * 100
-			
-			title := "Atividade Desconhecida"
-			if act, ok := activitiesMap[sub.ActivityID]; ok {
-				title = act.Title
-			}
-
-			activitiesAccuracy = append(activitiesAccuracy, dto.ActivityAccuracyDTO{
-				ActivityID: sub.ActivityID,
-				Title:      title,
-				Accuracy:   accuracy,
-			})
 		}
 	}
 
@@ -478,6 +483,17 @@ func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashbo
 		})
 	}
 
+	var activitiesAccuracy []dto.ActivityAccuracyDTO
+	for actSubj, totalAnswers := range activitySubTotalAnswers {
+		correctAnswers := activitySubCorrectAnswers[actSubj]
+		accuracy := (float32(correctAnswers) / float32(totalAnswers)) * 100
+
+		activitiesAccuracy = append(activitiesAccuracy, dto.ActivityAccuracyDTO{
+			Subject:    actSubj,
+			Accuracy:   accuracy,
+		})
+	}
+
 	// Sort subjects alphabetically or by accuracy if preferred, leaving as is for now
 
 	dashboard := &dto.StudentDashboardDTO{
@@ -488,6 +504,65 @@ func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashbo
 	}
 
 	return dashboard, nil
+}
+
+func (s *activityService) GetClassRanking() ([]dto.StudentRankingDTO, error) {
+	// 1. Fetch all students
+	students, err := s.userRepository.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Fetch all submissions
+	submissions, err := s.activityRepository.GetAllSubmissions()
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Aggregate scores per UserID
+	userScores := make(map[string]float32)
+	for _, sub := range submissions {
+		userScores[sub.UserID] += sub.Score
+	}
+
+	// 4. Map user scores to ranking DTOs using student names
+	var rankings []dto.StudentRankingDTO
+	for _, student := range students {
+		// Even if they have no submissions, we can include them with 0 score, 
+		// but since we want the top ranking, we'll sort them down.
+		rankings = append(rankings, dto.StudentRankingDTO{
+			Name:  student.Name,
+			Score: userScores[student.ID],
+		})
+	}
+
+	// 5. Sort rankings descending by score
+	sort.Slice(rankings, func(i, j int) bool {
+		return rankings[i].Score > rankings[j].Score
+	})
+
+	// 6. Assign positions and filter top 3
+	var topRankings []dto.StudentRankingDTO
+	limit := 3
+	if len(rankings) < limit {
+		limit = len(rankings)
+	}
+
+	for i := 0; i < limit; i++ {
+		// Only include students who have at least > 0 score? 
+		// Or all top 3 even if score is 0? Let's just include the top 3.
+		if rankings[i].Score > 0 {
+			rankings[i].Position = i + 1
+			topRankings = append(topRankings, rankings[i])
+		}
+	}
+
+	// If no one has > 0 score, returns empty slice instead of nil for better JSON
+	if topRankings == nil {
+		topRankings = []dto.StudentRankingDTO{}
+	}
+
+	return topRankings, nil
 }
 
 func (s *activityService) UpdateAlternative(alternativeID string, updates map[string]interface{}) error {
@@ -524,6 +599,7 @@ func (s *activityService) UpdateActivityFull(id string, req *dto.ActivityRequest
 		ID:            id,
 		Title:         req.Title,
 		Description:   req.Description,
+		Subject:       req.Subject,
 		ActivityValue: req.ActivityValue,
 		Exercises:     exercises,
 	}

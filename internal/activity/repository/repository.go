@@ -19,6 +19,7 @@ type ActivityRepository interface {
 	HasUserSubmittedActivity(userID string, activityID string) (bool, error)
 	UpdateAlternative(alternativeID string, updates map[string]interface{}) error
 	UpdateActivityFull(activity *model.Activity) error
+	GetAllSubmissions() ([]model.ActivitySubmission, error)
 }
 
 type activityRepository struct {
@@ -135,4 +136,12 @@ func (r *activityRepository) UpdateActivityFull(activity *model.Activity) error 
 
 		return nil
 	})
+}
+
+func (r *activityRepository) GetAllSubmissions() ([]model.ActivitySubmission, error) {
+	var submissions []model.ActivitySubmission
+	if err := r.db.Find(&submissions).Error; err != nil {
+		return nil, err
+	}
+	return submissions, nil
 }
