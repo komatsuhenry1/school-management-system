@@ -34,7 +34,7 @@ func NewContainer() *Container {
 
 	// User
 	userSvc := userService.NewUserService(userRepo)
-	userHdl := userHandler.NewUserHandler(userSvc)
+	userHdl := userHandler.NewUserHandler(userSvc, authSvc)
 
 	// Activity
 	activityRepo := activityRepository.NewActivityRepository(db)

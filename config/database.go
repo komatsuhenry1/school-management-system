@@ -49,6 +49,8 @@ func ConnectDB() error {
 		&activityModel.Activity{},
 		&activityModel.Exercise{},
 		&activityModel.Alternative{},
+		&activityModel.ActivitySubmission{},
+		&activityModel.ExerciseSubmission{},
 	); err != nil {
 		return fmt.Errorf("erro ao migrar banco de dados: %w", err)
 	}

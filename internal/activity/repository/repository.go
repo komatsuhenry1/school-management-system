@@ -12,6 +12,7 @@ type ActivityRepository interface {
 	GetActivityByID(id string) (*model.Activity, error)
 	UpdateActivity(id string, updates map[string]interface{}) (*model.Activity, error)
 	DeleteActivity(id string) error
+	SubmitActivity(submission *model.ActivitySubmission) error
 }
 
 type activityRepository struct {
@@ -55,4 +56,8 @@ func (r *activityRepository) UpdateActivity(id string, updates map[string]interf
 
 func (r *activityRepository) DeleteActivity(id string) error {
 	return r.db.Delete(&model.Activity{}, "id = ?", id).Error
+}
+
+func (r *activityRepository) SubmitActivity(submission *model.ActivitySubmission) error {
+	return r.db.Create(submission).Error
 }

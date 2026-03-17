@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"schoolmanagement/internal/user/model"
 	"errors"
+	"schoolmanagement/internal/user/model"
 
 	"gorm.io/gorm"
 )
@@ -14,6 +14,10 @@ type UserRepository interface {
 	UpdateUser(user *model.User) error
 	GetProfessionals() ([]model.User, error)
 	UpdateUserPartial(id string, updates map[string]interface{}) (*model.User, error)
+	// New methods for full CRUD
+	GetAllUsers() ([]model.User, error)
+	GetUserByID(id string) (*model.User, error)
+	DeleteUser(id string) error
 }
 
 type userRepository struct {
@@ -69,4 +73,26 @@ func (r *userRepository) UpdateUserPartial(id string, updates map[string]interfa
 	}
 
 	return &user, nil
+}
+
+// New methods for full CRUD
+
+func (r *userRepository) GetAllUsers() ([]model.User, error) {
+	var users []model.User
+	if err := r.db.Where("role = ?", "USER").Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (r *userRepository) GetUserByID(id string) (*model.User, error) {
+	var user model.User
+	if err := r.db.Where("id = ? AND role = ?", id, "USER").First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) DeleteUser(id string) error {
+	return r.db.Where("id = ? AND role = ?", id, "USER").Delete(&model.User{}).Error
 }

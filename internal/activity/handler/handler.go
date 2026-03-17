@@ -34,6 +34,22 @@ func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 	utils.SendSuccessResponse(c, "Atividade criada com sucesso.", activity)
 }
 
+func (h *ActivityHandler) SubmitActivity(c *gin.Context) {
+	var req dto.SubmissionRequestDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	activity, err := h.service.SubmitActivity(&req)
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Atividade submetida com sucesso.", activity)
+}
+
 func (h *ActivityHandler) GetAllActivities(c *gin.Context) {
 	activities, err := h.service.GetAllActivities()
 	if err != nil {

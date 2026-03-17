@@ -12,6 +12,7 @@ type ActivityService interface {
 	GetActivityByID(id string) (*model.Activity, error)
 	UpdateActivity(id string, updates map[string]interface{}) (*model.Activity, error)
 	DeleteActivity(id string) error
+	SubmitActivity(req *dto.SubmissionRequestDTO) (*model.ActivitySubmission, error)
 }
 
 type activityService struct {
@@ -71,4 +72,63 @@ func (s *activityService) UpdateActivity(id string, updates map[string]interface
 
 func (s *activityService) DeleteActivity(id string) error {
 	return s.activityRepository.DeleteActivity(id)
+}
+
+func (s *activityService) SubmitActivity(req *dto.SubmissionRequestDTO) (*model.ActivitySubmission, error) {
+	// 1. Fetch the activity to know the correct answers
+	activity, err := s.activityRepository.GetActivityByID(req.ActivityID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Map correct answers for O(1) lookup
+	correctAnswers := make(map[string]model.Exercise)
+	for _, ex := range activity.Exercises {
+		correctAnswers[ex.ID] = ex
+	}
+
+	var totalScore float32
+	var exerciseSubmissions []model.ExerciseSubmission
+
+	// 3. Process each student answer
+	for _, answerReq := range req.Answers {
+		exercise, exists := correctAnswers[answerReq.ExerciseID]
+		if !exists {
+			// Skip or return error if they answered an exercise that doesn't belong to this activity
+			continue
+		}
+
+		isCorrect := false
+		pointsEarned := float32(0)
+
+		// Simple exact match logic (could be improved for case-insensitivity or alternatives in the future)
+		if answerReq.StudentAnswer == exercise.Answer {
+			isCorrect = true
+			pointsEarned = exercise.ExerciseValue
+			totalScore += pointsEarned
+		}
+
+		exerciseSubmissions = append(exerciseSubmissions, model.ExerciseSubmission{
+			ExerciseID:    answerReq.ExerciseID,
+			StudentAnswer: answerReq.StudentAnswer,
+			IsCorrect:     isCorrect,
+			PointsEarned:  pointsEarned,
+		})
+	}
+
+	// 4. Create the final submission payload
+	submission := &model.ActivitySubmission{
+		ActivityID: activity.ID,
+		UserID:     req.UserID,
+		Score:      totalScore,
+		Status:     "COMPLETED", // Adjust as necessary if manual review is needed
+		Answers:    exerciseSubmissions,
+	}
+
+	// 5. Save to database
+	if err := s.activityRepository.SubmitActivity(submission); err != nil {
+		return nil, err
+	}
+
+	return submission, nil
 }

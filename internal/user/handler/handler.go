@@ -1,22 +1,87 @@
 package handler
 
 import (
+	"fmt"
+	"net/http"
+	"schoolmanagement/internal/auth/dto"
 	"schoolmanagement/internal/user/service"
 	"schoolmanagement/internal/utils"
-	"net/http"
-
-	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
-	service service.UserService
+	service     service.UserService
+	authService interface {
+		RegisterUser(userRequestDTO *dto.UserRequestDTO) error
+	}
 }
 
-func NewUserHandler(service service.UserService) *UserHandler {
-	return &UserHandler{service: service}
+// We need to inject the authService to use its RegisterUser function since
+// the user creation logic (password hashing, valid cpf/phone) is in the auth package.
+func NewUserHandler(service service.UserService, authService interface {
+	RegisterUser(userRequestDTO *dto.UserRequestDTO) error
+}) *UserHandler {
+	return &UserHandler{
+		service:     service,
+		authService: authService,
+	}
+}
+
+func (h *UserHandler) CreateUser(c *gin.Context) {
+	var userRequestDto dto.UserRequestDTO
+
+	if err := c.ShouldBindJSON(&userRequestDto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := userRequestDto.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.authService.RegisterUser(&userRequestDto)
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Usuário registrado com sucesso.", nil)
+}
+
+func (h *UserHandler) GetAllUsers(c *gin.Context) {
+	users, err := h.service.GetAllUsers()
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Alunos listados com sucesso.", users)
+}
+
+func (h *UserHandler) GetUserByID(c *gin.Context) {
+	id := c.Param("id")
+
+	user, err := h.service.GetUserByID(id)
+	if err != nil {
+		utils.SendErrorResponse(c, "Aluno não encontrado.", http.StatusNotFound)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Aluno encontrado.", user)
+}
+
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.service.DeleteUser(id); err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Aluno deletado com sucesso.", nil)
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
