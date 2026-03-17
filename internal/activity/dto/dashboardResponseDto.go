@@ -24,3 +24,14 @@ type ActivityDashboardDTO struct {
 	HardestQuestions []HardestQuestionDTO         `json:"hardest_questions"`
 	Students         []StudentSubmissionStatusDTO `json:"students"`
 }
+
+type SubjectAccuracyDTO struct {
+	Subject  string  `json:"subject"`
+	Accuracy float32 `json:"accuracy"`
+}
+
+type StudentDashboardDTO struct {
+	TotalActivitiesCompleted int                  `json:"total_activities_completed"`
+	AverageScore             float32              `json:"average_score"`
+	Subjects                 []SubjectAccuracyDTO `json:"subjects"`
+}

@@ -18,6 +18,7 @@ type ActivityService interface {
 	GetActivityDashboard(activityID string) (*dto.ActivityDashboardDTO, error)
 	GetActiveActivities() ([]dto.ActiveActivityResponseDTO, error)
 	GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error)
+	GetStudentDashboard(userID string) (*dto.StudentDashboardDTO, error)
 }
 
 type activityService struct {
@@ -303,6 +304,7 @@ func (s *activityService) GetActiveActivities() ([]dto.ActiveActivityResponseDTO
 			ActivityValue: act.ActivityValue,
 			Status:        act.Status,
 			Exercises:     exercises,
+			CreatedAt:     act.CreatedAt,
 		})
 	}
 
@@ -345,4 +347,82 @@ func (s *activityService) GetActivityQuestions(activityID string) (*dto.Activity
 	}
 
 	return response, nil
+}
+
+func (s *activityService) GetStudentDashboard(userID string) (*dto.StudentDashboardDTO, error) {
+	// 1. Fetch student's submissions
+	submissions, err := s.activityRepository.GetSubmissionsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	totalActivitiesCompleted := len(submissions)
+	if totalActivitiesCompleted == 0 {
+		return &dto.StudentDashboardDTO{
+			TotalActivitiesCompleted: 0,
+			AverageScore:             0,
+			Subjects:                 []dto.SubjectAccuracyDTO{},
+		}, nil
+	}
+
+	var totalScore float32 = 0
+	
+	// Track correct anwers vs total answers per subject
+	subjectTotalAnswers := make(map[string]int)
+	subjectCorrectAnswers := make(map[string]int)
+
+	// Since we need the subject, we have to fetch the exercises related to the answers.
+	// Instead of querying exercise by exercise, we will collect all unique Activity IDs
+	// from the submissions, fetch those activities, and build an Exercise map.
+	activityIDs := make(map[string]bool)
+	for _, sub := range submissions {
+		totalScore += sub.Score
+		activityIDs[sub.ActivityID] = true
+	}
+
+	averageScore := totalScore / float32(totalActivitiesCompleted)
+
+	// Fetch all necessary exercises to get subjects
+	exercisesMap := make(map[string]model.Exercise)
+	for actID := range activityIDs {
+		act, err := s.activityRepository.GetActivityByID(actID)
+		if err == nil {
+			for _, ex := range act.Exercises {
+				exercisesMap[ex.ID] = ex
+			}
+		}
+	}
+
+	// Now aggregate subject accuracy
+	for _, sub := range submissions {
+		for _, ans := range sub.Answers {
+			if ex, exists := exercisesMap[ans.ExerciseID]; exists {
+				subjectTotalAnswers[ex.ExerciseSubject]++
+				if ans.IsCorrect {
+					subjectCorrectAnswers[ex.ExerciseSubject]++
+				}
+			}
+		}
+	}
+
+	var subjectsAccuracy []dto.SubjectAccuracyDTO
+	for subject, totalAnswers := range subjectTotalAnswers {
+		correctAnswers := subjectCorrectAnswers[subject]
+		accuracy := (float32(correctAnswers) / float32(totalAnswers)) * 100
+
+		subjectsAccuracy = append(subjectsAccuracy, dto.SubjectAccuracyDTO{
+			Subject:  subject,
+			Accuracy: accuracy,
+		})
+	}
+
+	// Sort subjects alphabetically or by accuracy if preferred, leaving as is for now
+
+	dashboard := &dto.StudentDashboardDTO{
+		TotalActivitiesCompleted: totalActivitiesCompleted,
+		AverageScore:             averageScore,
+		Subjects:                 subjectsAccuracy,
+	}
+
+	return dashboard, nil
 }

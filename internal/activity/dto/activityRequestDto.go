@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type AlternativeDTO struct {
 	Letter string `json:"letter"`
 	Value  string `json:"value"`
@@ -36,6 +38,7 @@ type ActiveActivityResponseDTO struct {
 	Description   string               `json:"description"`
 	ActivityValue float32              `json:"activity_value"`
 	Status        string               `json:"status"`
+	CreatedAt     time.Time            `json:"created_at"`
 	Exercises     []StudentExerciseDTO `json:"exercises"`
 }
 

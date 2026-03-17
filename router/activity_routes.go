@@ -16,6 +16,7 @@ func SetupActivityRoutes(r *gin.RouterGroup, container *di.Container) {
 		
 		// Somente aluno responde
 		activity.POST("/submit/:id", middleware.AuthRoles("USER"), container.ActivityHandler.SubmitActivity)
+		activity.GET("/student/dashboard", middleware.AuthRoles("USER"), container.ActivityHandler.GetStudentDashboard)
 		
 		// Ambos podem listar e ver atividades específicas (Teacher vê tudo, Activity/active aluno vê)
 		activity.GET("/", middleware.AuthRoles("TEACHER", "USER"), container.ActivityHandler.GetAllActivities)

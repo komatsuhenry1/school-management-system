@@ -164,3 +164,15 @@ func (h *ActivityHandler) GetActivityQuestions(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Questões da atividade listadas com sucesso.", questions)
 }
+
+func (h *ActivityHandler) GetStudentDashboard(c *gin.Context) {
+	userId := utils.GetUserId(c)
+
+	dashboardData, err := h.service.GetStudentDashboard(userId)
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Dashboard do aluno gerado com sucesso.", dashboardData)
+}

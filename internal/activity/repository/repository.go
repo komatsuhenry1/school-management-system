@@ -15,6 +15,7 @@ type ActivityRepository interface {
 	SubmitActivity(submission *model.ActivitySubmission) error
 	GetSubmissionsByActivityID(activityID string) ([]model.ActivitySubmission, error)
 	GetActiveActivities() ([]model.Activity, error)
+	GetSubmissionsByUserID(userID string) ([]model.ActivitySubmission, error)
 }
 
 type activityRepository struct {
@@ -79,4 +80,12 @@ func (r *activityRepository) GetActiveActivities() ([]model.Activity, error) {
 		return nil, err
 	}
 	return activities, nil
+}
+
+func (r *activityRepository) GetSubmissionsByUserID(userID string) ([]model.ActivitySubmission, error) {
+	var submissions []model.ActivitySubmission
+	if err := r.db.Preload("Answers").Where("user_id = ?", userID).Find(&submissions).Error; err != nil {
+		return nil, err
+	}
+	return submissions, nil
 }
