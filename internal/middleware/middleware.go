@@ -23,9 +23,10 @@ var (
 	blockedIPs = make(map[string]time.Time)
 )
 
-func AuthUser() gin.HandlerFunc {
+// Recebe as roles permitidas como parâmetros variáveis
+func AuthRoles(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fmt.Println("AuthUser")
+		fmt.Println("AuthRoles:", allowedRoles)
 		ip := c.ClientIP()
 		limiter := getClient(ip)
 		if limiter == nil {
@@ -71,9 +72,26 @@ func AuthUser() gin.HandlerFunc {
 			return
 		}
 
-		role, ok := claims["role"].(string)
-		if !ok || role != "ADMIN" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"success": "false", "data": []interface{}{}, "message": "Rota com acesso apenas para usuários administradores"})
+		userRole, ok := claims["role"].(string)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Role não encontrada no token"})
+			return
+		}
+
+		// Checa se a role do usuário está dentro das roles permitidas
+		isAllowed := false
+		for _, role := range allowedRoles {
+			if userRole == role {
+				isAllowed = true
+				break
+			}
+		}
+
+		if !isAllowed {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"success": "false",
+				"message": "Acesso negado para o seu perfil",
+			})
 			return
 		}
 
@@ -106,6 +124,8 @@ func getClient(ip string) *rate.Limiter {
 	c.lastSeen = time.Now()
 	return c.limiter
 }
+
+
 
 func CleanupClients() {
 	for {
