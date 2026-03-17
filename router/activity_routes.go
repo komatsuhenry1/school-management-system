@@ -23,5 +23,8 @@ func SetupActivityRoutes(r *gin.RouterGroup, container *di.Container) {
 		
 		// Dashboard apenas professores
 		activity.GET("/:id/dashboard", middleware.AuthRoles("TEACHER"), container.ActivityHandler.GetActivityDashboard)
+		
+		// Liberar/Ocultar atividade
+		activity.POST("/:id/release", middleware.AuthRoles("TEACHER"), container.ActivityHandler.ToggleActivityStatus)
 	}
 }

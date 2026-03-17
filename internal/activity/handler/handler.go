@@ -112,3 +112,30 @@ func (h *ActivityHandler) GetActivityDashboard(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Dashboard da atividade gerado com sucesso.", dashboardData)
 }
+
+func (h *ActivityHandler) ToggleActivityStatus(c *gin.Context) {
+	id := c.Param("id")
+
+	// 1. Fetch current activity
+	activity, err := h.service.GetActivityByID(id)
+	if err != nil {
+		utils.SendErrorResponse(c, "Atividade não encontrada.", http.StatusNotFound)
+		return
+	}
+
+	// 2. Toggle status
+	newStatus := "ACTIVE"
+	if activity.Status == "ACTIVE" {
+		newStatus = "INACTIVE"
+	}
+
+	// 3. Update status
+	updates := map[string]interface{}{"status": newStatus}
+	updatedActivity, err := h.service.UpdateActivity(id, updates)
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Status da atividade alterado.", updatedActivity)
+}
