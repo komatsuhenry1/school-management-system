@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"schoolmanagement/internal/activity/dto"
 	"schoolmanagement/internal/activity/model"
 	"schoolmanagement/internal/activity/repository"
@@ -85,6 +86,15 @@ func (s *activityService) DeleteActivity(id string) error {
 }
 
 func (s *activityService) SubmitActivity(req *dto.SubmissionRequestDTO, activityID string, userID string) (*model.ActivitySubmission, error) {
+	// 0. Check for duplicate submission
+	hasSubmitted, err := s.activityRepository.HasUserSubmittedActivity(userID, activityID)
+	if err != nil {
+		return nil, err
+	}
+	if hasSubmitted {
+		return nil, errors.New("o usuário já submeteu uma resposta para esta atividade")
+	}
+
 	// 1. Fetch the activity to know the correct answers
 	activity, err := s.activityRepository.GetActivityByID(activityID)
 	if err != nil {

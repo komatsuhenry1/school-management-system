@@ -16,6 +16,7 @@ type ActivityRepository interface {
 	GetSubmissionsByActivityID(activityID string) ([]model.ActivitySubmission, error)
 	GetActiveActivities() ([]model.Activity, error)
 	GetSubmissionsByUserID(userID string) ([]model.ActivitySubmission, error)
+	HasUserSubmittedActivity(userID string, activityID string) (bool, error)
 }
 
 type activityRepository struct {
@@ -88,4 +89,17 @@ func (r *activityRepository) GetSubmissionsByUserID(userID string) ([]model.Acti
 		return nil, err
 	}
 	return submissions, nil
+}
+
+func (r *activityRepository) HasUserSubmittedActivity(userID string, activityID string) (bool, error) {
+	var count int64
+	err := r.db.Model(&model.ActivitySubmission{}).
+		Where("user_id = ? AND activity_id = ?", userID, activityID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
