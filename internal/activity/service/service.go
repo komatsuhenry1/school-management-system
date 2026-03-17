@@ -4,6 +4,8 @@ import (
 	"schoolmanagement/internal/activity/dto"
 	"schoolmanagement/internal/activity/model"
 	"schoolmanagement/internal/activity/repository"
+	userRepo "schoolmanagement/internal/user/repository"
+	"sort"
 )
 
 type ActivityService interface {
@@ -13,14 +15,19 @@ type ActivityService interface {
 	UpdateActivity(id string, updates map[string]interface{}) (*model.Activity, error)
 	DeleteActivity(id string) error
 	SubmitActivity(req *dto.SubmissionRequestDTO) (*model.ActivitySubmission, error)
+	GetActivityDashboard(activityID string) (*dto.ActivityDashboardDTO, error)
 }
 
 type activityService struct {
 	activityRepository repository.ActivityRepository
+	userRepository     userRepo.UserRepository
 }
 
-func NewActivityService(activityRepository repository.ActivityRepository) ActivityService {
-	return &activityService{activityRepository: activityRepository}
+func NewActivityService(activityRepository repository.ActivityRepository, userRepository userRepo.UserRepository) ActivityService {
+	return &activityService{
+		activityRepository: activityRepository,
+		userRepository:     userRepository,
+	}
 }
 
 func (s *activityService) CreateActivity(req *dto.ActivityRequestDTO) (*model.Activity, error) {
@@ -131,4 +138,129 @@ func (s *activityService) SubmitActivity(req *dto.SubmissionRequestDTO) (*model.
 	}
 
 	return submission, nil
+}
+
+func (s *activityService) GetActivityDashboard(activityID string) (*dto.ActivityDashboardDTO, error) {
+	// 1. Fetch the activity itself to know exercises
+	activity, err := s.activityRepository.GetActivityByID(activityID)
+	if err != nil {
+		return nil, err
+	}
+
+	exercisesMap := make(map[string]model.Exercise)
+	for _, ex := range activity.Exercises {
+		exercisesMap[ex.ID] = ex
+	}
+
+	// 2. Fetch all submissions for this activity
+	submissions, err := s.activityRepository.GetSubmissionsByActivityID(activityID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Fetch all students (role = USER)
+	students, err := s.userRepository.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	// Metrics
+	var totalScore float32 = 0
+	var highestScore float32 = 0
+	lowestScore := float32(1000) // Arbitrary high number
+	if len(submissions) == 0 {
+		lowestScore = 0
+	}
+
+	// Error tracking per exercise: map[ExerciseID]int (count of errors)
+	exerciseErrors := make(map[string]int)
+	totalAttemptsPerExercise := make(map[string]int)
+
+	// Map submissions by UserID for quick student status check
+	submissionsByUser := make(map[string]*model.ActivitySubmission)
+
+	for i := range submissions {
+		sub := &submissions[i]
+		submissionsByUser[sub.UserID] = sub
+
+		// Aggregate scores
+		totalScore += sub.Score
+		if sub.Score > highestScore {
+			highestScore = sub.Score
+		}
+		if sub.Score < lowestScore {
+			lowestScore = sub.Score
+		}
+
+		// Aggregate exercise errors
+		for _, ans := range sub.Answers {
+			totalAttemptsPerExercise[ans.ExerciseID]++
+			if !ans.IsCorrect {
+				exerciseErrors[ans.ExerciseID]++
+			}
+		}
+	}
+
+	var classAverage float32 = 0
+	if len(submissions) > 0 {
+		classAverage = totalScore / float32(len(submissions))
+	}
+
+	// 4. Calculate Hardest Questions
+	var hardestQuestions []dto.HardestQuestionDTO
+	for exID, errCount := range exerciseErrors {
+		attempts := totalAttemptsPerExercise[exID]
+		if attempts > 0 {
+			errPct := (float32(errCount) / float32(attempts)) * 100
+			ex, found := exercisesMap[exID]
+			if found {
+				hardestQuestions = append(hardestQuestions, dto.HardestQuestionDTO{
+					Question:        ex.Question,
+					Subject:         ex.ExerciseSubject,
+					ErrorPercentage: errPct,
+				})
+			}
+		}
+	}
+
+	// Sort hardest questions descending by ErrorPercentage
+	sort.Slice(hardestQuestions, func(i, j int) bool {
+		return hardestQuestions[i].ErrorPercentage > hardestQuestions[j].ErrorPercentage
+	})
+
+	// Keep only top 3
+	if len(hardestQuestions) > 3 {
+		hardestQuestions = hardestQuestions[:3]
+	}
+
+	// 5. Build Student List
+	var studentStatuses []dto.StudentSubmissionStatusDTO
+	for _, student := range students {
+		status := dto.StudentSubmissionStatusDTO{
+			Name:      student.Name,
+			Submitted: false,
+			Score:     0,
+		}
+
+		if sub, found := submissionsByUser[student.ID]; found {
+			status.Submitted = true
+			status.Score = sub.Score
+		}
+
+		studentStatuses = append(studentStatuses, status)
+	}
+
+	// 6. Build final DTO
+	dashboardDTO := &dto.ActivityDashboardDTO{
+		Metrics: dto.ActivityMetricsDTO{
+			ClassAverage:     classAverage,
+			HighestScore:     highestScore,
+			LowestScore:      lowestScore,
+			TotalSubmissions: len(submissions),
+		},
+		HardestQuestions: hardestQuestions,
+		Students:         studentStatuses,
+	}
+
+	return dashboardDTO, nil
 }

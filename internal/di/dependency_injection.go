@@ -38,7 +38,7 @@ func NewContainer() *Container {
 
 	// Activity
 	activityRepo := activityRepository.NewActivityRepository(db)
-	activitySvc := activityService.NewActivityService(activityRepo)
+	activitySvc := activityService.NewActivityService(activityRepo, userRepo)
 	activityHdl := activityHandler.NewActivityHandler(activitySvc)
 
 	// Teacher

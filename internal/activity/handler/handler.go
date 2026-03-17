@@ -100,3 +100,15 @@ func (h *ActivityHandler) DeleteActivity(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Atividade deletada com sucesso.", nil)
 }
+
+func (h *ActivityHandler) GetActivityDashboard(c *gin.Context) {
+	id := c.Param("id")
+
+	dashboardData, err := h.service.GetActivityDashboard(id)
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Dashboard da atividade gerado com sucesso.", dashboardData)
+}

@@ -13,6 +13,7 @@ type ActivityRepository interface {
 	UpdateActivity(id string, updates map[string]interface{}) (*model.Activity, error)
 	DeleteActivity(id string) error
 	SubmitActivity(submission *model.ActivitySubmission) error
+	GetSubmissionsByActivityID(activityID string) ([]model.ActivitySubmission, error)
 }
 
 type activityRepository struct {
@@ -60,4 +61,12 @@ func (r *activityRepository) DeleteActivity(id string) error {
 
 func (r *activityRepository) SubmitActivity(submission *model.ActivitySubmission) error {
 	return r.db.Create(submission).Error
+}
+
+func (r *activityRepository) GetSubmissionsByActivityID(activityID string) ([]model.ActivitySubmission, error) {
+	var submissions []model.ActivitySubmission
+	if err := r.db.Preload("Answers").Where("activity_id = ?", activityID).Find(&submissions).Error; err != nil {
+		return nil, err
+	}
+	return submissions, nil
 }

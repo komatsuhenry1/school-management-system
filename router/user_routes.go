@@ -10,10 +10,10 @@ import (
 func SetupUserRoutes(r *gin.RouterGroup, container *di.Container) {
 	user := r.Group("/user")
 	{
-		user.POST("/", container.UserHandler.CreateUser)
-		user.GET("/", container.UserHandler.GetAllUsers)
-		user.GET("/:id", container.UserHandler.GetUserByID)
-		user.PATCH("/:id", middleware.AuthRoles("USER"), container.UserHandler.UpdateUser)
-		user.DELETE("/:id", container.UserHandler.DeleteUser)
+		user.POST("/", middleware.AuthRoles("TEACHER"), container.UserHandler.CreateUser)
+		user.GET("/", middleware.AuthRoles("TEACHER", "USER"), container.UserHandler.GetAllUsers)
+		user.GET("/:id", middleware.AuthRoles("TEACHER", "USER"), container.UserHandler.GetUserByID)
+		user.PATCH("/:id", middleware.AuthRoles("USER", "TEACHER"), container.UserHandler.UpdateUser)
+		user.DELETE("/:id", middleware.AuthRoles("USER", "TEACHER"), container.UserHandler.DeleteUser)
 	}
 }
