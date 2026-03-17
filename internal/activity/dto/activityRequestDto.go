@@ -20,3 +20,29 @@ type ActivityRequestDTO struct {
 	ActivityValue float32       `json:"activity_value"`
 	Exercises     []ExerciseDTO `json:"exercises"`
 }
+
+type StudentExerciseDTO struct {
+	ID              string           `json:"id"`
+	ExerciseNumber  int              `json:"exercise_number"`
+	ExerciseSubject string           `json:"exercise_subject"`
+	Question        string           `json:"question"`
+	ExerciseValue   float32          `json:"exercise_value"`
+	Alternatives    []AlternativeDTO `json:"alternatives"`
+}
+
+type ActiveActivityResponseDTO struct {
+	ID            string               `json:"id"`
+	Title         string               `json:"title"`
+	Description   string               `json:"description"`
+	ActivityValue float32              `json:"activity_value"`
+	Status        string               `json:"status"`
+	Exercises     []StudentExerciseDTO `json:"exercises"`
+}
+
+type ActivityQuestionsResponseDTO struct {
+	ID            string               `json:"id"`
+	Title         string               `json:"title"`
+	Description   string               `json:"description"`
+	ActivityValue float32              `json:"activity_value"`
+	Exercises     []StudentExerciseDTO `json:"exercises"`
+}

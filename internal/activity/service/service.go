@@ -16,6 +16,8 @@ type ActivityService interface {
 	DeleteActivity(id string) error
 	SubmitActivity(req *dto.SubmissionRequestDTO) (*model.ActivitySubmission, error)
 	GetActivityDashboard(activityID string) (*dto.ActivityDashboardDTO, error)
+	GetActiveActivities() ([]dto.ActiveActivityResponseDTO, error)
+	GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error)
 }
 
 type activityService struct {
@@ -263,4 +265,84 @@ func (s *activityService) GetActivityDashboard(activityID string) (*dto.Activity
 	}
 
 	return dashboardDTO, nil
+}
+
+func (s *activityService) GetActiveActivities() ([]dto.ActiveActivityResponseDTO, error) {
+	activities, err := s.activityRepository.GetActiveActivities()
+	if err != nil {
+		return nil, err
+	}
+
+	var response []dto.ActiveActivityResponseDTO
+	for _, act := range activities {
+		var exercises []dto.StudentExerciseDTO
+		for _, ex := range act.Exercises {
+			// Map alternatives if they exist
+			var alts []dto.AlternativeDTO
+			for _, a := range ex.Alternatives {
+				alts = append(alts, dto.AlternativeDTO{
+					Letter: a.Letter,
+					Value:  a.Value,
+				})
+			}
+
+			exercises = append(exercises, dto.StudentExerciseDTO{
+				ID:              ex.ID,
+				ExerciseNumber:  ex.ExerciseNumber,
+				ExerciseSubject: ex.ExerciseSubject,
+				Question:        ex.Question,
+				ExerciseValue:   ex.ExerciseValue,
+				Alternatives:    alts,
+			})
+		}
+
+		response = append(response, dto.ActiveActivityResponseDTO{
+			ID:            act.ID,
+			Title:         act.Title,
+			Description:   act.Description,
+			ActivityValue: act.ActivityValue,
+			Status:        act.Status,
+			Exercises:     exercises,
+		})
+	}
+
+	return response, nil
+}
+
+func (s *activityService) GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error) {
+	activity, err := s.activityRepository.GetActivityByID(activityID)
+	if err != nil {
+		return nil, err
+	}
+
+	var exercises []dto.StudentExerciseDTO
+	for _, ex := range activity.Exercises {
+		// Map alternatives
+		var alts []dto.AlternativeDTO
+		for _, a := range ex.Alternatives {
+			alts = append(alts, dto.AlternativeDTO{
+				Letter: a.Letter,
+				Value:  a.Value,
+			})
+		}
+
+		exercises = append(exercises, dto.StudentExerciseDTO{
+			ID:              ex.ID,
+			ExerciseNumber:  ex.ExerciseNumber,
+			ExerciseSubject: ex.ExerciseSubject,
+			Question:        ex.Question,
+			ExerciseValue:   ex.ExerciseValue,
+			Alternatives:    alts, // Include alternatives but NO Answer
+		})
+	}
+
+	response := &dto.ActivityQuestionsResponseDTO{
+		ID:            activity.ID,
+		Title:         activity.Title,
+		Description:   activity.Description,
+		ActivityValue: activity.ActivityValue,
+		Exercises:     exercises,
+	}
+
+	return response, nil
 }

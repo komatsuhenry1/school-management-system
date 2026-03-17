@@ -139,3 +139,25 @@ func (h *ActivityHandler) ToggleActivityStatus(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Status da atividade alterado.", updatedActivity)
 }
+
+func (h *ActivityHandler) GetActiveActivities(c *gin.Context) {
+	activities, err := h.service.GetActiveActivities()
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Atividades ativas listadas com sucesso.", activities)
+}
+
+func (h *ActivityHandler) GetActivityQuestions(c *gin.Context) {
+	id := c.Param("id")
+
+	questions, err := h.service.GetActivityQuestions(id)
+	if err != nil {
+		utils.SendErrorResponse(c, "Atividade não encontrada.", http.StatusNotFound)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Questões da atividade listadas com sucesso.", questions)
+}

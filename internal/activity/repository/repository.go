@@ -14,6 +14,7 @@ type ActivityRepository interface {
 	DeleteActivity(id string) error
 	SubmitActivity(submission *model.ActivitySubmission) error
 	GetSubmissionsByActivityID(activityID string) ([]model.ActivitySubmission, error)
+	GetActiveActivities() ([]model.Activity, error)
 }
 
 type activityRepository struct {
@@ -69,4 +70,13 @@ func (r *activityRepository) GetSubmissionsByActivityID(activityID string) ([]mo
 		return nil, err
 	}
 	return submissions, nil
+}
+
+func (r *activityRepository) GetActiveActivities() ([]model.Activity, error) {
+	var activities []model.Activity
+	// Only fetch exercises, we don't need alternatives here based on requirement
+	if err := r.db.Preload("Exercises").Where("status = ?", "ACTIVE").Find(&activities).Error; err != nil {
+		return nil, err
+	}
+	return activities, nil
 }
