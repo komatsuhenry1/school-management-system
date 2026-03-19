@@ -47,3 +47,12 @@ type StudentRankingDTO struct {
 	Name     string  `json:"name"`
 	Score    float32 `json:"score"`
 }
+
+type ClassroomMetricsDTO struct {
+	TotalStudents     int                  `json:"total_students"`
+	TotalActivities   int                  `json:"total_activities"`
+	TotalSubmissions  int                  `json:"total_submissions"`
+	ClassAverageScore float32              `json:"class_average_score"`
+	GeneralAccuracy   float32              `json:"general_accuracy"`
+	HardestSubjects   []SubjectAccuracyDTO `json:"hardest_subjects"`
+}

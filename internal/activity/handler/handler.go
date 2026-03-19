@@ -224,3 +224,13 @@ func (h *ActivityHandler) GetClassRanking(c *gin.Context) {
 
 	utils.SendSuccessResponse(c, "Ranking da sala retornado com sucesso.", ranking)
 }
+
+func (h *ActivityHandler) GetClassroomMetrics(c *gin.Context) {
+	metrics, err := h.service.GetClassroomMetrics()
+	if err != nil {
+		utils.SendErrorResponse(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccessResponse(c, "Métricas da sala retornadas com sucesso.", metrics)
+}

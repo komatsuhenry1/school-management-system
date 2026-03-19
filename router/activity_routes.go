@@ -20,8 +20,9 @@ func SetupActivityRoutes(r *gin.RouterGroup, container *di.Container) {
 		activity.POST("/submit/:id", middleware.AuthRoles("USER"), container.ActivityHandler.SubmitActivity)
 		activity.GET("/student/dashboard", middleware.AuthRoles("USER"), container.ActivityHandler.GetStudentDashboard)
 		
-		// Ranking (Both teachers and students can see)
+		// Ranking e Metrics (Ambos teachers and students can see)
 		activity.GET("/ranking", middleware.AuthRoles("USER", "TEACHER"), container.ActivityHandler.GetClassRanking)
+		activity.GET("/metrics", middleware.AuthRoles("USER", "TEACHER"), container.ActivityHandler.GetClassroomMetrics)
 
 		// Ambos podem listar e ver atividades específicas (Teacher vê tudo, Activity/active aluno vê)
 		activity.GET("/", middleware.AuthRoles("TEACHER", "USER"), container.ActivityHandler.GetAllActivities)

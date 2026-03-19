@@ -22,6 +22,7 @@ type ActivityService interface {
 	GetActivityQuestions(activityID string) (*dto.ActivityQuestionsResponseDTO, error)
 	GetStudentDashboard(userID string) (*dto.StudentDashboardDTO, error)
 	GetClassRanking() ([]dto.StudentRankingDTO, error)
+	GetClassroomMetrics() (*dto.ClassroomMetricsDTO, error)
 	UpdateAlternative(alternativeID string, updates map[string]interface{}) error
 	UpdateActivityFull(id string, req *dto.ActivityRequestDTO) (*model.Activity, error)
 }
@@ -564,6 +565,107 @@ func (s *activityService) GetClassRanking() ([]dto.StudentRankingDTO, error) {
 	}
 
 	return topRankings, nil
+}
+
+func (s *activityService) GetClassroomMetrics() (*dto.ClassroomMetricsDTO, error) {
+	// 1. Fetch data
+	students, err := s.userRepository.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	activities, err := s.activityRepository.GetAllActivities()
+	if err != nil {
+		return nil, err
+	}
+
+	submissions, err := s.activityRepository.GetAllSubmissions()
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Build exercises map for grouping subjects
+	exercisesMap := make(map[string]model.Exercise)
+	for _, act := range activities {
+		for _, ex := range act.Exercises {
+			exercisesMap[ex.ID] = ex
+		}
+	}
+
+	// 3. Aggregate metrics
+	var totalScore float32 = 0
+	var totalCorrectAnswers int = 0
+	var totalAnswersCount int = 0
+
+	subjectTotalAnswers := make(map[string]int)
+	subjectCorrectAnswers := make(map[string]int)
+
+	for _, sub := range submissions {
+		totalScore += sub.Score
+
+		for _, ans := range sub.Answers {
+			totalAnswersCount++
+			if ans.IsCorrect {
+				totalCorrectAnswers++
+			}
+
+			if ex, exists := exercisesMap[ans.ExerciseID]; exists {
+				subjectTotalAnswers[ex.ExerciseSubject]++
+				if ans.IsCorrect {
+					subjectCorrectAnswers[ex.ExerciseSubject]++
+				}
+			}
+		}
+	}
+
+	var classAverageScore float32 = 0
+	if len(submissions) > 0 {
+		classAverageScore = totalScore / float32(len(submissions))
+	}
+
+	var generalAccuracy float32 = 0
+	if totalAnswersCount > 0 {
+		generalAccuracy = (float32(totalCorrectAnswers) / float32(totalAnswersCount)) * 100
+	}
+
+	// 4. Calculate Top 3 Hardest Subjects (lowest accuracy)
+	var subjectAccuracies []dto.SubjectAccuracyDTO
+	for subj, totalAns := range subjectTotalAnswers {
+		if totalAns > 0 {
+			acc := (float32(subjectCorrectAnswers[subj]) / float32(totalAns)) * 100
+			subjectAccuracies = append(subjectAccuracies, dto.SubjectAccuracyDTO{
+				Subject:  subj,
+				Accuracy: acc,
+			})
+		}
+	}
+
+	sort.Slice(subjectAccuracies, func(i, j int) bool {
+		return subjectAccuracies[i].Accuracy < subjectAccuracies[j].Accuracy
+	})
+
+	var hardestSubjects []dto.SubjectAccuracyDTO
+	limit := 3
+	if len(subjectAccuracies) < limit {
+		limit = len(subjectAccuracies)
+	}
+
+	for i := 0; i < limit; i++ {
+		hardestSubjects = append(hardestSubjects, subjectAccuracies[i])
+	}
+
+	if hardestSubjects == nil {
+		hardestSubjects = []dto.SubjectAccuracyDTO{}
+	}
+
+	return &dto.ClassroomMetricsDTO{
+		TotalStudents:     len(students),
+		TotalActivities:   len(activities),
+		TotalSubmissions:  len(submissions),
+		ClassAverageScore: classAverageScore,
+		GeneralAccuracy:   generalAccuracy,
+		HardestSubjects:   hardestSubjects,
+	}, nil
 }
 
 func (s *activityService) UpdateAlternative(alternativeID string, updates map[string]interface{}) error {
