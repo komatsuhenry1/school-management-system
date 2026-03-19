@@ -38,6 +38,7 @@ type ActiveActivityResponseDTO struct {
 	Title         string               `json:"title"`
 	Description   string               `json:"description"`
 	ActivityValue float32              `json:"activity_value"`
+	Subject       string               `json:"subject"`
 	Status        string               `json:"status"`
 	CreatedAt     time.Time            `json:"created_at"`
 	IsSubmitted   bool                 `json:"is_submitted"`

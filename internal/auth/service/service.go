@@ -68,6 +68,7 @@ func (s *userService) RegisterUser(userRequestDTO *dto.UserRequestDTO) error {
 		Email:        normalizedEmail,
 		Cpf:          normalizedCPF,
 		Password:     userRequestDTO.Password,
+		Status:       "ACTIVE",
 		Phone:        normalizedPhone,
 		Role:         "USER",
 	}

@@ -342,6 +342,7 @@ func (s *activityService) GetActiveActivities(userID string) ([]dto.ActiveActivi
 			Title:         act.Title,
 			Description:   act.Description,
 			ActivityValue: act.ActivityValue,
+			Subject:       act.Subject,
 			Status:        act.Status,
 			IsSubmitted:   isSubmitted,
 			Score:         scorePtr,

@@ -65,6 +65,6 @@ func (h *UserHandler) LoginUser(c *gin.Context) {
 	utils.SendSuccessResponse(c, "Usuário logado com sucesso.",
 		gin.H{
 			"token": token,
-			"user":  gin.H{"name": user.Name, "email": user.Email, "role": user.Role},
+			"user":  gin.H{"name": user.Name, "email": user.Email, "role": user.Role, "id": user.ID},
 		})
 }
