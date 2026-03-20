@@ -17,6 +17,16 @@ func NewUserHandler(service service.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
+// RegisterUser godoc
+// @Summary Register a new user
+// @Description Register a new user in the system with role validation.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.UserRequestDTO true "User Registration Info"
+// @Success 200 {object} map[string]interface{} "User registered successfully"
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Router /auth/register [post]
 func (h *UserHandler) RegisterUser(c *gin.Context) {
 	var userRequestDto dto.UserRequestDTO
 
@@ -39,6 +49,16 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	utils.SendSuccessResponse(c, "Usuário registrado com sucesso.", nil)
 }
 
+// LoginUser godoc
+// @Summary Login user
+// @Description Authenticate user and return JWT tokens.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.LoginRequestDTO true "User Login Info"
+// @Success 200 {object} map[string]interface{} "User logged in successfully"
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Router /auth/login [post]
 func (h *UserHandler) LoginUser(c *gin.Context) {
 	var loginRequestDTO dto.LoginRequestDTO
 	if err := c.ShouldBindJSON(&loginRequestDTO); err != nil {

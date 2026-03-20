@@ -1,0 +1,896 @@
+basePath: /api/v1
+definitions:
+  dto.ActivityRequestDTO:
+    properties:
+      activity_value:
+        type: number
+      description:
+        type: string
+      exercises:
+        items:
+          $ref: '#/definitions/dto.ExerciseDTO'
+        type: array
+      subject:
+        type: string
+      title:
+        type: string
+    required:
+    - subject
+    - title
+    type: object
+  dto.AlternativeDTO:
+    properties:
+      letter:
+        type: string
+      value:
+        type: string
+    type: object
+  dto.ExerciseDTO:
+    properties:
+      alternatives:
+        items:
+          $ref: '#/definitions/dto.AlternativeDTO'
+        type: array
+      answer:
+        type: string
+      exercise_number:
+        type: integer
+      exercise_subject:
+        type: string
+      exercise_value:
+        type: number
+      question:
+        type: string
+    type: object
+  dto.ExerciseSubmissionDTO:
+    properties:
+      exercise_id:
+        type: string
+      student_answer:
+        type: string
+    required:
+    - exercise_id
+    - student_answer
+    type: object
+  dto.SubmissionRequestDTO:
+    properties:
+      answers:
+        items:
+          $ref: '#/definitions/dto.ExerciseSubmissionDTO'
+        type: array
+    required:
+    - answers
+    type: object
+  dto.TeacherRequestDTO:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      subject:
+        type: string
+    required:
+    - email
+    - name
+    type: object
+  schoolmanagement_internal_auth_dto.LoginRequestDTO:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  schoolmanagement_internal_auth_dto.UserRequestDTO:
+    properties:
+      cpf:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+    required:
+    - cpf
+    - email
+    - name
+    - password
+    - phone
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: API for the School Management System with roles for Teachers and Students.
+  title: School Management System API
+  version: "1.0"
+paths:
+  /activity/:
+    get:
+      description: Get a list of all activities.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of activities
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all activities
+      tags:
+      - Activity
+    post:
+      consumes:
+      - application/json
+      description: Create a new activity in the system.
+      parameters:
+      - description: Activity Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ActivityRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new activity
+      tags:
+      - Activity
+  /activity/{id}:
+    delete:
+      description: Delete activity from the system.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete activity by ID
+      tags:
+      - Activity
+    get:
+      description: Find activity by their unique ID.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity found
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get activity by ID
+      tags:
+      - Activity
+    patch:
+      consumes:
+      - application/json
+      description: Partially update activity.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update activity by ID
+      tags:
+      - Activity
+    put:
+      consumes:
+      - application/json
+      description: Replace full activity details.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Full Activity Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ActivityRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update full activity
+      tags:
+      - Activity
+  /activity/{id}/dashboard:
+    get:
+      description: Get dashboard metrics for a specific activity.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dashboard data
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get activity dashboard
+      tags:
+      - Activity
+  /activity/{id}/exercise/{exerciseID}/alternative/{alternativeID}:
+    patch:
+      consumes:
+      - application/json
+      description: Update a specific alternative for an exercise.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      - description: Alternative ID
+        in: path
+        name: alternativeID
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alternative updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update alternative
+      tags:
+      - Activity
+  /activity/{id}/questions:
+    get:
+      description: Get questions for a specific activity.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of questions
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get activity questions
+      tags:
+      - Activity
+  /activity/{id}/release:
+    post:
+      description: Release or hide an activity based on its current status.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity status toggled
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Toggle activity status
+      tags:
+      - Activity
+  /activity/active:
+    get:
+      description: Get active activities for the logged-in user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of active activities
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get active activities
+      tags:
+      - Activity
+  /activity/metrics:
+    get:
+      description: Get overall performance and completion metrics for the classroom.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Metrics data
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get classroom metrics
+      tags:
+      - Activity
+  /activity/ranking:
+    get:
+      description: Get ranking of all students based on their grades.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ranking data
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get class ranking
+      tags:
+      - Activity
+  /activity/student/dashboard:
+    get:
+      description: Get dashboard insights for the logged-in student.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dashboard data
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get student dashboard
+      tags:
+      - Activity
+  /activity/submit/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Submit an activity response for a student.
+      parameters:
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Submission Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SubmissionRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity submitted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Submit an activity
+      tags:
+      - Activity
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT tokens.
+      parameters:
+      - description: User Login Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schoolmanagement_internal_auth_dto.LoginRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User logged in successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user in the system with role validation.
+      parameters:
+      - description: User Registration Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schoolmanagement_internal_auth_dto.UserRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User registered successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
+  /teacher/:
+    get:
+      description: Get a list of all teachers.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of teachers
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all teachers
+      tags:
+      - Teacher
+    post:
+      consumes:
+      - application/json
+      description: Create a new teacher manually.
+      parameters:
+      - description: Teacher Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TeacherRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Teacher created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new teacher
+      tags:
+      - Teacher
+  /teacher/{id}:
+    delete:
+      description: Delete teacher from the system.
+      parameters:
+      - description: Teacher ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Teacher deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete teacher by ID
+      tags:
+      - Teacher
+    get:
+      description: Find teacher by their unique ID.
+      parameters:
+      - description: Teacher ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Teacher found
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get teacher by ID
+      tags:
+      - Teacher
+    patch:
+      consumes:
+      - application/json
+      description: Partially update teacher.
+      parameters:
+      - description: Teacher ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Teacher updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update teacher by ID
+      tags:
+      - Teacher
+  /user/:
+    get:
+      description: Get a list of all users.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of students
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all users
+      tags:
+      - User
+    post:
+      consumes:
+      - application/json
+      description: Create a new student (USER) manually.
+      parameters:
+      - description: User Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schoolmanagement_internal_auth_dto.UserRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User registered successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new user
+      tags:
+      - User
+  /user/{id}:
+    delete:
+      description: Delete user from the system.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user by ID
+      tags:
+      - User
+    get:
+      description: Find user by their unique ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User found
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      description: Partially update user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user by ID
+      tags:
+      - User
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

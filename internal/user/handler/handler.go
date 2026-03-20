@@ -29,6 +29,17 @@ func NewUserHandler(service service.UserService, authService interface {
 	}
 }
 
+// CreateUser godoc
+// @Summary Create a new user
+// @Description Create a new student (USER) manually.
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param request body dto.UserRequestDTO true "User Info"
+// @Success 200 {object} map[string]interface{} "User registered successfully"
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Security BearerAuth
+// @Router /user/ [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var userRequestDto dto.UserRequestDTO
 
@@ -51,6 +62,15 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	utils.SendSuccessResponse(c, "Usuário registrado com sucesso.", nil)
 }
 
+// GetAllUsers godoc
+// @Summary List all users
+// @Description Get a list of all users.
+// @Tags User
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of students"
+// @Failure 500 {object} map[string]string "Internal Server Error"
+// @Security BearerAuth
+// @Router /user/ [get]
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	users, err := h.service.GetAllUsers()
 	if err != nil {
@@ -61,6 +81,16 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	utils.SendSuccessResponse(c, "Alunos listados com sucesso.", users)
 }
 
+// GetUserByID godoc
+// @Summary Get user by ID
+// @Description Find user by their unique ID.
+// @Tags User
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} map[string]interface{} "User found"
+// @Failure 404 {object} map[string]string "Not Found"
+// @Security BearerAuth
+// @Router /user/{id} [get]
 func (h *UserHandler) GetUserByID(c *gin.Context) {
 	id := c.Param("id")
 
@@ -73,6 +103,16 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 	utils.SendSuccessResponse(c, "Aluno encontrado.", user)
 }
 
+// DeleteUser godoc
+// @Summary Delete user by ID
+// @Description Delete user from the system.
+// @Tags User
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} map[string]interface{} "User deleted successfully"
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Security BearerAuth
+// @Router /user/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 
@@ -84,6 +124,18 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	utils.SendSuccessResponse(c, "Aluno deletado com sucesso.", nil)
 }
 
+// UpdateUser godoc
+// @Summary Update user by ID
+// @Description Partially update user.
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param request body map[string]interface{} true "Fields to update"
+// @Success 200 {object} map[string]interface{} "User updated successfully"
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Security BearerAuth
+// @Router /user/{id} [patch]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	userId := c.Param("id")
 
